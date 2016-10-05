@@ -9,25 +9,45 @@ typedef struct {
 	unsigned char s;
 	unsigned char m;
 	unsigned char h;
+	unsigned char d;
 } time;
 
 time t;
 
-char NOW_H = 9;
-char NOW_M = 55;
+char NOW_H = 22;
+char NOW_M = 32;
 char NOW_S = 30;
+char NOW_D = 3; // sun = 0; sat = 6
 
-char START_H = 5;
-char START_M = 40;
+/* weekday start time */
+char START_H = 6;
+char START_M = 0;
 char START_S = 0;
 
+/* weekend start time */
+char WE_START_H = 6;
+char WE_START_M = 0;
+char WE_START_S = 0;
+
+/* weekday wake time */
 char WAKE_H = 6;
-char WAKE_M = 50;
+char WAKE_M = 45;
 char WAKE_S = 0;
 
+/* weekend wake time */
+char WE_WAKE_H = 6;
+char WE_WAKE_M = 45;
+char WE_WAKE_S = 0;
+
+/* weekday off time */
 char OFF_H = 7;
-char OFF_M = 30;
+char OFF_M = 15;
 char OFF_S = 0;
+
+/* weekend off time */
+char WE_OFF_H = 7;
+char WE_OFF_M = 15;
+char WE_OFF_S = 0;
 
 char NUM_COUNT = 15;
 
@@ -46,14 +66,16 @@ char tick = 0;
 
 #define SECS(h, m, s) (h*3600UL + m*60UL + s)
 
+#define WE(d) (d==0 || d==6)
+
 void update_leds() {
 	//PORTA = t.s & 0xFF;
 
 	// 'int' has max 32768, but we need to represent up to 86400
 	unsigned long now = SECS(t.h, t.m, t.s);
-	unsigned long START = SECS(START_H, START_M, START_S);
-	unsigned long WAKE = SECS(WAKE_H, WAKE_M, WAKE_S);
-	unsigned long OFF = SECS(OFF_H, OFF_M, OFF_S);
+	unsigned long START = WE(t.d) ? SECS(WE_START_H, WE_START_M, WE_START_S) : SECS(START_H, START_M, START_S);
+	unsigned long WAKE  = WE(t.d) ? SECS(WE_WAKE_H,  WE_WAKE_M,  WE_WAKE_S)  : SECS(WAKE_H,  WAKE_M,  WAKE_S);
+	unsigned long OFF   = WE(t.d) ? SECS(WE_OFF_H,   WE_OFF_M,   WE_OFF_S)   : SECS(OFF_H,   OFF_M,   OFF_S);
 
 	if (now >= WAKE && now <= OFF) {
 		if (tick) {
@@ -99,6 +121,7 @@ int main() {
 	t.s = NOW_S;
 	t.m = NOW_M;
 	t.h = NOW_H;
+	t.d = NOW_D;
 
 	DDRA = 0xFF;
 	DDRC = 0x3F; // all except top two
@@ -147,6 +170,9 @@ ISR(TIMER2_OVF_vect) {
 			t.m = 0;
 			if (++t.h == 24) {
 				t.h = 0;
+				if (++t.d == 7) {
+					t.d = 0;
+				}
 			}
 		}
 	}
